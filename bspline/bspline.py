@@ -262,6 +262,29 @@ Returns:
         return lambda x: sum( ci*Bi(x) for ci,Bi in terms )
 
 
+    def basis(self,tau):
+        # get number of basis functions and output dtype
+        dummy = self.__call__(0.)
+        nbasis = dummy.shape[0]
+
+        tau = np.atleast_1d(tau)
+        if tau.ndim > 1:
+            raise ValueError("tau must be a list or a rank-1 array")
+
+        A = np.empty( (tau.shape[0], nbasis), dtype=dummy.dtype )
+        eps=1e-9
+        for i,taui in enumerate(tau):
+            if taui< self.knot_vector[0]:
+                A[i,:] = self.collmat(self.knot_vector[0] + eps) + \
+                         (taui - self.knot_vector[0])*self.collmat(self.knot_vector[0] + eps,deriv_order=1)
+            elif taui > self.knot_vector[-1]:
+                A[i,:] = self.collmat(self.knot_vector[-1] - eps) + \
+                         (taui - self.knot_vector[-1])*self.collmat(self.knot_vector[-1] - eps,deriv_order=1)
+            else:
+                A[i,:] = self.collmat(taui)
+
+        return np.squeeze(A)
+
     def collmat(self, tau, deriv_order=0):
         """Compute collocation matrix.
 
